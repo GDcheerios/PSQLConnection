@@ -1,3 +1,3 @@
-from connector import PSQLConnection
+from .connector import PSQLConnection
 
 __all__ = ['PSQLConnection']
