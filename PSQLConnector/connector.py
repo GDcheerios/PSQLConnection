@@ -1,14 +1,15 @@
 import psycopg2
-import psycopg2 as psql
-from psycopg2 import pool
-import atexit
 import time
-import os
 
 
 class PSQLConnection:
-    _connection = None
-    _cursor = None
+    """
+    A utility class for managing PostgreSQL database connections
+    and performing queries.
+    """
+    _db_connection = None
+    _db_cursor = None
+    _DEFAULT_PORT = 5432
 
     @staticmethod
     def connect(
@@ -16,53 +17,91 @@ class PSQLConnection:
             password: str,
             host: str,
             database: str,
-            port: int = 5432,
+            port: int = _DEFAULT_PORT,
     ) -> None:
-        PSQLConnection._connection = psycopg2.connect(
+        """
+        Establishes a connection to the PostgreSQL database.
+        """
+        PSQLConnection._db_connection = psycopg2.connect(
             user=user,
             password=password,
             host=host,
             port=port,
             database=database
         )
-
-        if PSQLConnection._connection:
-            print(f"connected to {database} DB successfully")
-
-        PSQLConnection._cursor = PSQLConnection._connection.cursor()
+        if PSQLConnection._db_connection:
+            print(f"Connected to {database} DB successfully.")
+        PSQLConnection._db_cursor = PSQLConnection._db_connection.cursor()
 
     @staticmethod
-    def do(query: str, params: tuple = ()) -> None:
+    def _log_execution_time(action_description: str, start_time: float) -> None:
         """
-        This method is meant for modifying the DB.
+        Logs the execution time for a database operation.
         """
-        start = time.time()
-        PSQLConnection._cursor.execute(query, params)
-        PSQLConnection._connection.commit()
-        print(f"done in {time.time() - start} seconds!")
+        duration = time.time() - start_time
+        print(f"{action_description} in {duration:.2f} seconds!")
 
     @staticmethod
-    def get_group(query: str, params: tuple = ()):
+    def _run_query(query: str, params: tuple = (), fetch_mode: str = None):
         """
-        This method is meant for returning values from the DB.
+        Executes the given query and optionally fetches results.
+
+        :param query: The SQL query to be executed.
+        :param params: Parameters to be passed into the SQL query.
+        :param fetch_mode: Determines the fetch behavior:
+                           - None: Execute query without returning results.
+                           - "all": Fetch all rows.
+                           - "one": Fetch a single row.
+        :return: Fetched rows (if fetch_mode is specified), otherwise None.
         """
         start = time.time()
-        PSQLConnection._cursor.execute(query, params)
-        PSQLConnection._connection.commit()
-        print(f"grabbed in {time.time() - start} seconds!")
-        return PSQLConnection._cursor.fetchall()
+        try:
+            PSQLConnection._db_cursor.execute(query, params)
+
+            # Commit for data modification queries
+            if fetch_mode is None:
+                PSQLConnection._db_connection.commit()
+                PSQLConnection._log_execution_time("Query executed", start)
+                return None
+            elif fetch_mode == "all":
+                results = PSQLConnection._db_cursor.fetchall()
+                PSQLConnection._log_execution_time("Results fetched", start)
+                return results
+            elif fetch_mode == "one":
+                result = PSQLConnection._db_cursor.fetchone()
+                PSQLConnection._log_execution_time("Result fetched", start)
+                return result
+        except psycopg2.Error as e:
+            PSQLConnection._db_cursor.rollback()
 
     @staticmethod
-    def get(query: str, params: tuple = ()):
+    def execute(query: str, params: tuple = ()) -> None:
         """
-        This method is meant for returning a value from the DB.
+        Executes a query that modifies the database.
         """
-        start = time.time()
-        PSQLConnection._cursor.execute(query, params)
-        PSQLConnection._connection.commit()
-        print(f"grabbed in {time.time() - start} seconds!")
-        return PSQLConnection._cursor.fetchone()
+        PSQLConnection._run_query(query, params, fetch_mode=None)
+
+    @staticmethod
+    def fetch_all(query: str, params: tuple = ()) -> list:
+        """
+        Fetches all results from a query.
+        """
+        return PSQLConnection._run_query(query, params, fetch_mode="all")
+
+    @staticmethod
+    def fetch_one(query: str, params: tuple = ()):
+        """
+        Fetches a single result from a query.
+        """
+        return PSQLConnection._run_query(query, params, fetch_mode="one")
 
     @staticmethod
     def end() -> None:
-        PSQLConnection._cursor.close()
+        """
+        Properly closes the database connection and cursor.
+        """
+        if PSQLConnection._db_cursor:
+            PSQLConnection._db_cursor.close()
+        if PSQLConnection._db_connection:
+            PSQLConnection._db_connection.close()
+        print("Database connection closed.")
