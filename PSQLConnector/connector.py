@@ -72,7 +72,7 @@ class PSQLConnection:
                 PSQLConnection._log_execution_time("Result fetched", start)
                 return result
         except psycopg2.Error as e:
-            PSQLConnection._db_cursor.rollback()
+            print(f"Error executing query: {e}")
 
     @staticmethod
     def execute(query: str, params: tuple = ()) -> None:
