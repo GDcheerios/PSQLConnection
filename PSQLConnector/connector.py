@@ -65,7 +65,7 @@ class PSQLConnection:
                 return None
             elif fetch_mode == "all":
                 results = PSQLConnection._db_cursor.fetchall()
-                PSQLConnection._log_execution_time("Results fetched", start)
+                PSQLConnection._log_execution_time(f"{len(results)} results fetched", start)
                 return results
             elif fetch_mode == "one":
                 result = PSQLConnection._db_cursor.fetchone()
