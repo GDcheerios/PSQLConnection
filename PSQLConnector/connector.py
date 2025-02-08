@@ -71,6 +71,16 @@ class PSQLConnection:
                 result = PSQLConnection._db_cursor.fetchone()
                 PSQLConnection._log_execution_time("Result fetched", start)
                 return result
+            elif fetch_mode == "all_as_dict":
+                results = PSQLConnection._db_cursor.fetchall()
+                PSQLConnection._log_execution_time(f"{len(results)} results fetched", start)
+                column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
+                return [dict(zip(column_names, results)) for _ in results]
+            elif fetch_mode == "one_as_dict":
+                result = PSQLConnection._db_cursor.fetchone()
+                PSQLConnection._log_execution_time("Result fetched", start)
+                column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
+                return dict(zip(column_names, result))
         except psycopg2.Error as e:
             print(f"Error executing query: {e}")
 
@@ -89,11 +99,25 @@ class PSQLConnection:
         return PSQLConnection._run_query(query, params, fetch_mode="all")
 
     @staticmethod
-    def fetch_one(query: str, params: tuple = ()):
+    def fetch_one(query: str, params: tuple = ()) -> tuple:
         """
         Fetches a single result from a query.
         """
         return PSQLConnection._run_query(query, params, fetch_mode="one")
+
+    @staticmethod
+    def fetch_all_to_dict(query: str, params: tuple = ()) -> dict:
+        """
+         Fetches all results from a query and converts them to a dictionary.
+        """
+        return PSQLConnection._run_query(query, params, fetch_mode="all_as_dict")
+
+    @staticmethod
+    def fetch_to_dict(query: str, params: tuple = ()) -> dict:
+        """
+         Fetches all results from a query and converts them to a dictionary.
+        """
+        return PSQLConnection._run_query(query, params, fetch_mode="one_as_dict")
 
     @staticmethod
     def end() -> None:
