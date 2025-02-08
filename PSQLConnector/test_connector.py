@@ -33,6 +33,7 @@ class TestPSQLConnection(TestCase):
         result = db.fetch_all_to_dict("SELECT * FROM test_table;")
         print(result)
         self.assertEqual(type(result), list)
+        self.assertEqual(len(result), 2)
 
     def test_fetch_to_dict(self):
         result = db.fetch_to_dict("SELECT * FROM test_table;")

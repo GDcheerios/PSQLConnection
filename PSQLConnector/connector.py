@@ -75,7 +75,7 @@ class PSQLConnection:
                 results = PSQLConnection._db_cursor.fetchall()
                 PSQLConnection._log_execution_time(f"{len(results)} results fetched", start)
                 column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
-                return [dict(zip(column_names, results)) for _ in results]
+                return [dict(zip(column_names, row)) for row in results]
             elif fetch_mode == "one_as_dict":
                 result = PSQLConnection._db_cursor.fetchone()
                 PSQLConnection._log_execution_time("Result fetched", start)
@@ -106,7 +106,7 @@ class PSQLConnection:
         return PSQLConnection._run_query(query, params, fetch_mode="one")
 
     @staticmethod
-    def fetch_all_to_dict(query: str, params: tuple = ()) -> dict:
+    def fetch_all_to_dict(query: str, params: tuple = ()) -> list:
         """
          Fetches all results from a query and converts them to a dictionary.
         """
