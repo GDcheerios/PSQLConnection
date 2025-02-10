@@ -57,10 +57,10 @@ class PSQLConnection:
         start = time.time()
         try:
             PSQLConnection._db_cursor.execute(query, params)
+            PSQLConnection._db_connection.commit()
 
             # Commit for data modification queries
             if fetch_mode is None:
-                PSQLConnection._db_connection.commit()
                 PSQLConnection._log_execution_time("Query executed", start)
                 return None
             elif fetch_mode == "all":
