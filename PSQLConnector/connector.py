@@ -74,17 +74,11 @@ class PSQLConnection:
             elif fetch_mode == "all_as_dict":
                 results = PSQLConnection._db_cursor.fetchall()
                 PSQLConnection._log_execution_time(f"{len(results)} results fetched", start)
-                if not results:
-                    return None
-
                 column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
                 return [dict(zip(column_names, row)) for row in results]
             elif fetch_mode == "one_as_dict":
                 result = PSQLConnection._db_cursor.fetchone()
                 PSQLConnection._log_execution_time("Result fetched", start)
-                if not result:
-                    return None
-
                 column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
                 return dict(zip(column_names, result))
         except psycopg2.Error as e:
