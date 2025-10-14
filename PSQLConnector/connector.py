@@ -124,6 +124,10 @@ class PSQLConnection:
         return PSQLConnection._run_query(query, params, fetch_mode="one_as_dict")
 
     @staticmethod
+    def now():
+        return PSQLConnection._run_query("SELECT NOW()")
+
+    @staticmethod
     def end() -> None:
         """
         Properly closes the database connection and cursor.
