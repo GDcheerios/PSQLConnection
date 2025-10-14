@@ -39,6 +39,10 @@ class TestPSQLConnection(TestCase):
         result = db.fetch_to_dict("SELECT * FROM test_table;")
         print(result)
         self.assertEqual(type(result), dict)
+    
+    def test_now(self):
+        result = db.now()
+        self.assertIsNotNone(result)
 
     @classmethod
     def tearDownClass(cls):

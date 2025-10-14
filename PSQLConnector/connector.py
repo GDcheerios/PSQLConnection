@@ -125,7 +125,9 @@ class PSQLConnection:
 
     @staticmethod
     def now():
-        return PSQLConnection._run_query("SELECT NOW()")
+        query = "SELECT NOW()"
+        params = ()
+        return PSQLConnection._run_query(query, params, fetch_mode="one")
 
     @staticmethod
     def end() -> None:
