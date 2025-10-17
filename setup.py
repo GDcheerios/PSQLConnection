@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='PSQLConnection',
-    version='1.3.1',
+    version='1.3.2',
     packages=['PSQLConnector'],
     install_requires=['psycopg2'],
     url='https://github.com/GDcheeriosYT/PSQLConnection',

@@ -73,14 +73,14 @@ class PSQLConnection:
             elif fetch_mode == "all_as_dict":
                 results = cursor.fetchall()
                 PSQLConnection._log_execution_time(f"{len(results)} results fetched", start)
-                column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
+                column_names = [desc[0] for desc in cursor.description]
                 if not results: return None
                 if not column_names: return None
                 return [dict(zip(column_names, row)) for row in results]
             elif fetch_mode == "one_as_dict":
                 result = cursor.fetchone()
                 PSQLConnection._log_execution_time("Result fetched", start)
-                column_names = [desc[0] for desc in PSQLConnection._db_cursor.description]
+                column_names = [desc[0] for desc in cursor.description]
                 if not result: return None
                 if not column_names: return None
                 return dict(zip(column_names, result))
