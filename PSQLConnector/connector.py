@@ -8,7 +8,6 @@ class PSQLConnection:
     and performing queries.
     """
     _db_connection = None
-    _db_cursor = None
     _DEFAULT_PORT = 5432
 
     @staticmethod
@@ -31,7 +30,6 @@ class PSQLConnection:
         )
         if PSQLConnection._db_connection:
             print(f"Connected to {database} DB successfully.")
-        PSQLConnection._db_cursor = PSQLConnection._db_connection.cursor()
 
     @staticmethod
     def _log_execution_time(action_description: str, start_time: float) -> None:
@@ -55,8 +53,9 @@ class PSQLConnection:
         :return: Fetched rows (if fetch_mode is specified), otherwise None.
         """
         start = time.time()
+        cursor = PSQLConnection._db_connection.cursor()
         try:
-            PSQLConnection._db_cursor.execute(query, params)
+            cursor.execute(query, params)
             PSQLConnection._db_connection.commit()
 
             # Commit for data modification queries
@@ -87,6 +86,7 @@ class PSQLConnection:
                 return dict(zip(column_names, result))
         except psycopg2.Error as e:
             print(f"Error executing query: {e}")
+            cursor.close()
 
     @staticmethod
     def execute(query: str, params: tuple = ()) -> None:
@@ -134,8 +134,6 @@ class PSQLConnection:
         """
         Properly closes the database connection and cursor.
         """
-        if PSQLConnection._db_cursor:
-            PSQLConnection._db_cursor.close()
         if PSQLConnection._db_connection:
             PSQLConnection._db_connection.close()
         print("Database connection closed.")
