@@ -74,8 +74,8 @@ class PSQLConnection:
                 results = cursor.fetchall()
                 PSQLConnection._log_execution_time(f"{len(results)} results fetched", start)
                 column_names = [desc[0] for desc in cursor.description]
-                if not results: return None
-                if not column_names: return None
+                if not results: return []
+                if not column_names: return []
                 return [dict(zip(column_names, row)) for row in results]
             elif fetch_mode == "one_as_dict":
                 result = cursor.fetchone()
@@ -87,6 +87,7 @@ class PSQLConnection:
         except psycopg2.Error as e:
             print(f"Error executing query: {e}")
             cursor.close()
+            return []
 
     @staticmethod
     def execute(query: str, params: tuple = ()) -> None:
