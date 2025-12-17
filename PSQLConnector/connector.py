@@ -88,6 +88,8 @@ class PSQLConnection:
             print(f"Error executing query: {e}")
             cursor.close()
             return []
+        finally:
+            cursor.close()
 
     @staticmethod
     def execute(query: str, params: tuple = ()) -> None:
