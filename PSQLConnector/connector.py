@@ -86,6 +86,8 @@ class PSQLConnection:
                 return dict(zip(column_names, result))
         except psycopg2.Error as e:
             print(f"Error executing query: {e}")
+            if PSQLConnection._db_connection:
+                PSQLConnection._db_connection.rollback()
             cursor.close()
             return []
         finally:
