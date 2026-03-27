@@ -10,22 +10,52 @@ class PSQLConnection:
     _db_connection = None
     _DEFAULT_PORT = 5432
     _conn_params = None
-    _logging_enabled = True
+    _LOG_LEVELS = {
+        "NONE": 0,
+        "ERROR": 40,
+        "WARNING": 30,
+        "INFO": 20,
+        "DEBUG": 10,
+    }
+    _log_level = _LOG_LEVELS["INFO"]
 
     @staticmethod
     def set_logging(enabled: bool) -> None:
         """
-        Enables or disables connector log output.
+        Backward-compatible logging toggle.
+        True sets level to INFO, False disables logs.
         """
-        PSQLConnection._logging_enabled = enabled
+        PSQLConnection._log_level = (
+            PSQLConnection._LOG_LEVELS["INFO"]
+            if enabled
+            else PSQLConnection._LOG_LEVELS["NONE"]
+        )
 
     @staticmethod
-    def _log(message: str) -> None:
+    def set_log_level(level: str) -> None:
         """
-        Prints log output only when logging is enabled.
+        Sets logging level.
+        Accepted values: NONE, ERROR, WARNING, INFO, DEBUG.
         """
-        if PSQLConnection._logging_enabled:
-            print(message)
+        normalized_level = str(level).upper()
+        if normalized_level not in PSQLConnection._LOG_LEVELS:
+            raise ValueError(
+                "Invalid log level. Expected one of: NONE, ERROR, WARNING, INFO, DEBUG."
+            )
+        PSQLConnection._log_level = PSQLConnection._LOG_LEVELS[normalized_level]
+
+    @staticmethod
+    def _log(message: str, level: str = "INFO") -> None:
+        """
+        Prints log output only when configured level allows it.
+        """
+        normalized_level = str(level).upper()
+        message_level = PSQLConnection._LOG_LEVELS.get(
+            normalized_level,
+            PSQLConnection._LOG_LEVELS["INFO"],
+        )
+        if message_level >= PSQLConnection._log_level:
+            print(f"[{normalized_level}] {message}")
 
     @staticmethod
     def connect(
@@ -61,7 +91,10 @@ class PSQLConnection:
         Logs the execution time for a database operation.
         """
         duration = time.time() - start_time
-        PSQLConnection._log(f"{action_description} in {duration:.2f} seconds!")
+        PSQLConnection._log(
+            f"{action_description} in {duration:.2f} seconds!",
+            level="DEBUG",
+        )
 
     @staticmethod
     def _reconnect_after_rollback() -> None:
@@ -70,17 +103,26 @@ class PSQLConnection:
         Does nothing if no connection parameters are stored.
         """
         if not PSQLConnection._conn_params:
-            PSQLConnection._log("Cannot reconnect: no stored connection parameters.")
+            PSQLConnection._log(
+                "Cannot reconnect: no stored connection parameters.",
+                level="WARNING",
+            )
             return
 
         try:
-            PSQLConnection._log("Attempting to reconnect to the database after rollback...")
+            PSQLConnection._log(
+                "Attempting to reconnect to the database after rollback...",
+                level="WARNING",
+            )
             PSQLConnection._db_connection = psycopg2.connect(
                 **PSQLConnection._conn_params
             )
             PSQLConnection._log("Reconnected to the database successfully.")
         except psycopg2.Error as reconnect_error:
-            PSQLConnection._log(f"Failed to reconnect to the database: {reconnect_error}")
+            PSQLConnection._log(
+                f"Failed to reconnect to the database: {reconnect_error}",
+                level="ERROR",
+            )
 
     @staticmethod
     def _run_query(query: str, params: tuple = (), fetch_mode: str = None):
@@ -128,13 +170,16 @@ class PSQLConnection:
                 if not column_names: return None
                 return dict(zip(column_names, result))
         except psycopg2.Error as e:
-            PSQLConnection._log(f"Error executing query: {e}")
+            PSQLConnection._log(f"Error executing query: {e}", level="ERROR")
             if PSQLConnection._db_connection:
                 try:
                     PSQLConnection._db_connection.rollback()
-                    PSQLConnection._log("Transaction rolled back.")
+                    PSQLConnection._log("Transaction rolled back.", level="WARNING")
                 except psycopg2.Error as rollback_error:
-                    PSQLConnection._log(f"Error during rollback: {rollback_error}")
+                    PSQLConnection._log(
+                        f"Error during rollback: {rollback_error}",
+                        level="ERROR",
+                    )
 
             PSQLConnection._reconnect_after_rollback()
 
