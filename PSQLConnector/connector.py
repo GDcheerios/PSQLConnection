@@ -10,6 +10,22 @@ class PSQLConnection:
     _db_connection = None
     _DEFAULT_PORT = 5432
     _conn_params = None
+    _logging_enabled = True
+
+    @staticmethod
+    def set_logging(enabled: bool) -> None:
+        """
+        Enables or disables connector log output.
+        """
+        PSQLConnection._logging_enabled = enabled
+
+    @staticmethod
+    def _log(message: str) -> None:
+        """
+        Prints log output only when logging is enabled.
+        """
+        if PSQLConnection._logging_enabled:
+            print(message)
 
     @staticmethod
     def connect(
@@ -30,7 +46,7 @@ class PSQLConnection:
             database=database
         )
         if PSQLConnection._db_connection:
-            print(f"Connected to {database} DB successfully.")
+            PSQLConnection._log(f"Connected to {database} DB successfully.")
             PSQLConnection._conn_params = {
                 "user": user,
                 "password": password,
@@ -45,7 +61,7 @@ class PSQLConnection:
         Logs the execution time for a database operation.
         """
         duration = time.time() - start_time
-        print(f"{action_description} in {duration:.2f} seconds!")
+        PSQLConnection._log(f"{action_description} in {duration:.2f} seconds!")
 
     @staticmethod
     def _reconnect_after_rollback() -> None:
@@ -54,17 +70,17 @@ class PSQLConnection:
         Does nothing if no connection parameters are stored.
         """
         if not PSQLConnection._conn_params:
-            print("Cannot reconnect: no stored connection parameters.")
+            PSQLConnection._log("Cannot reconnect: no stored connection parameters.")
             return
 
         try:
-            print("Attempting to reconnect to the database after rollback...")
+            PSQLConnection._log("Attempting to reconnect to the database after rollback...")
             PSQLConnection._db_connection = psycopg2.connect(
                 **PSQLConnection._conn_params
             )
-            print("Reconnected to the database successfully.")
+            PSQLConnection._log("Reconnected to the database successfully.")
         except psycopg2.Error as reconnect_error:
-            print(f"Failed to reconnect to the database: {reconnect_error}")
+            PSQLConnection._log(f"Failed to reconnect to the database: {reconnect_error}")
 
     @staticmethod
     def _run_query(query: str, params: tuple = (), fetch_mode: str = None):
@@ -112,13 +128,13 @@ class PSQLConnection:
                 if not column_names: return None
                 return dict(zip(column_names, result))
         except psycopg2.Error as e:
-            print(f"Error executing query: {e}")
+            PSQLConnection._log(f"Error executing query: {e}")
             if PSQLConnection._db_connection:
                 try:
                     PSQLConnection._db_connection.rollback()
-                    print("Transaction rolled back.")
+                    PSQLConnection._log("Transaction rolled back.")
                 except psycopg2.Error as rollback_error:
-                    print(f"Error during rollback: {rollback_error}")
+                    PSQLConnection._log(f"Error during rollback: {rollback_error}")
 
             PSQLConnection._reconnect_after_rollback()
 
@@ -175,4 +191,4 @@ class PSQLConnection:
         """
         if PSQLConnection._db_connection:
             PSQLConnection._db_connection.close()
-        print("Database connection closed.")
+        PSQLConnection._log("Database connection closed.")
